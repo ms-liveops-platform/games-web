@@ -1,0 +1,4 @@
+export function birdArt(index: number) {
+  const color = ['#cb6857','#c79845','#7e97af','#9b709a'][index % 4];
+  return `<svg viewBox="0 0 120 110" aria-hidden="true"><path d="m24 69-19-9 18-9M57 22l-8-17 17 10 12-11 1 23" fill="${color}"/><ellipse cx="63" cy="59" rx="41" ry="37" fill="${color}"/><ellipse cx="69" cy="79" rx="24" ry="14" fill="#fff0ce" opacity=".8"/><path d="M24 53Q-4 20 21 24l23 23" fill="${color}" stroke="#ffffff33" stroke-width="3"/><ellipse cx="54" cy="51" rx="13" ry="14" fill="#fff5de"/><ellipse cx="82" cy="51" rx="13" ry="14" fill="#fff5de"/><circle cx="58" cy="53" r="5" fill="#18242b"/><circle cx="78" cy="53" r="5" fill="#18242b"/><path d="m40 34 24 9m8 0 24-9" stroke="#25232b" stroke-width="7"/><path d="m67 58 19 10-20 7-10-9Z" fill="#f5ca64" stroke="#886130" stroke-width="2"/></svg>`;
+}

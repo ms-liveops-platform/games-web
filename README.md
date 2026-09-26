@@ -42,7 +42,7 @@ A failed request or 8-second timeout cancels animation and restores the last com
 - `src/game/reel-motion.ts`: deterministic reel motion and landing state.
 - `src/game/slot-scene.ts`: PixiJS scene, numeric symbols, masks, and win highlights.
 - `src/network/game-socket.ts`: WebSocket lifecycle, request correlation, validation, and timeout handling.
-- `src/main.ts`: controls, status, and session history.
+- `src/main.ts`: URL routing; `src/slot-app.ts`: slot controls and history.
 - `src/style.css`: responsive page layout.
 
 ## Verify
@@ -70,3 +70,35 @@ The screen contains the player name/balance, reels, spin button, and history. Th
 core-api requires MongoDB configuration before play. On connection the client sends `session.open`, restoring its stored player ID and token. Without credentials, core-api provisions a demo player with 100 credits. Use the back-office player launch link to play as a specific player. Link credentials are consumed from the fragment and removed from the address bar.
 
 All profile and balance communication remains WebSocket-only. `player.updated` messages reflect mock deposits, credit awards, profile changes, and spins. Back-office requests use HTTP independently. The backend is authoritative for bet, payout, and current balance.
+
+## Lucky wheel and lucky chests
+
+Open these routes on port 7777 (both work without parameters):
+
+- `/lucky-wheel/` — default eight-sector wheel.
+- `/lucky-chests/` — default six chests.
+- `/lucky-wheel/?mode=multiplier&baseAmount=10&amounts=1,2,5,10`
+- `/lucky-chests/?count=4&mode=instant&amounts=5,10,20,50`
+
+Query parameters: `mode` is `instant` (default) or `multiplier`; `amounts` is a comma-separated list; `baseAmount` is required for multipliers. Optional `sectors` (wheel) or `count` (chests) must match the list length when both are supplied. Without amounts, the default prize list repeats to fill the requested count. Optional comma-separated `labels` match the amounts. Alternatively, URL-encode a `config` JSON object with `{mode, baseAmount?, prizes:[{amount,label?}]}`.
+
+Wheel supports 2–16 sectors; chests supports 2–12 chests. Each prize entry has equal probability. Amounts and bases are integer mock credits; amounts may be zero. Each payout is limited to 1,000,000 credits. A chosen chest reveals one randomly selected prize from the configured pool.
+
+Standalone URLs are replayable previews: results come from core-api over WebSocket and never change player balances. The fixed 5:3 stage scales uniformly; GSAP animates wheel deceleration and chest opening, respecting reduced motion.
+
+Campaign/manual awards arrive in `awards.updated` and `session.ready`. The slot opens the next pending bonus after any current spin finishes. Award routes use `?awardId=<id>` and the existing player session. The server snapshots campaign configuration, ignores URL prize overrides, and credits each award exactly once. Refreshing or retrying restores the same settled prize. Continue returns to the slot and opens the next queued award.
+
+## Moving targets and scratch cards
+
+- `/shooting-targets/` — six fast-moving grumpy birds, a 30-second round, and a default per-hit reward range of 5–100 credits.
+- `/shooting-targets/?duration=30&count=6&mode=multiplier&baseAmount=10&min=2&max=8` — a hit awards an integer multiplier from 2 through 8, inclusive.
+- `/scratch-card/` — six scratchable zones; only one can be chosen.
+- `/scratch-card/?amounts=25,3,50,5&modes=instant,multiplier,instant,multiplier&baseAmount=10` — mixed credit and multiplier zones.
+
+Scratch supports 2–12 zones; targets maintains 3–12 live birds (legacy two-bird configurations are upgraded to three). Both support configurable choices and the same preview/award distinction as wheel and chests. Scratch cards accept optional per-zone `mode` in JSON `prizes`, or comma-separated `modes` in the URL. Any multiplier zone requires `baseAmount`.
+
+Drag across a scratch zone to remove its coating. The first touch locks the choice; clearing 30% reveals the result. Keyboard activation and the Reveal this zone button provide an accessible alternative. Remaining zones reveal in gray and pay nothing. Lucky chests now also reveal all unpicked prizes in gray. The server stores the complete shuffled prize layout with the result, preserving it on reconnect/retry. Legacy settled chest awards without a layout reconstruct the remaining pool deterministically.
+
+Grumpy birds move with GSAP (stationary when reduced motion is requested). Click/tap as many birds as possible before the countdown expires. Each shot bird grays out, falls, becomes unclickable, and is replaced immediately. At least three live targets stay visible. Instant rewards add together; multipliers add together and their sum multiplies the base amount once. Reward range is independent of which bird was hit. `min` and `max` define an inclusive uniform integer range; alternatively an explicit `amounts` list provides a discrete prize pool in URL previews. Campaign configuration is authoritative for awarded plays.
+
+Targets accept `duration=5..120` seconds in preview URLs (default 30), or `durationSeconds` in JSON configuration and back-office forms. Press Start to begin. The HUD displays time remaining, hit count, and the accumulated amount/multiplier. The server controls the deadline and each unique target ID. Awarded rounds resume their existing timer after reconnecting; closing the browser does not pause it. A completed round pays the accumulated total exactly once, including zero-hit rounds. Preview rounds use a persistent WebSocket and restarting a disconnected preview creates a new mock round without wallet effects.

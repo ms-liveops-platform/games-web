@@ -1,3 +1,4 @@
+import { validAward, type MiniAward } from "../mini/config";
 export type Matrix = [number[], number[], number[]];
 export interface Win {
   id: number;
@@ -97,11 +98,13 @@ export class GameSocket {
     timer: ReturnType<typeof setTimeout>;
   } | null = null;
 
+  private requests = new Map<string, { resolve: (award: MiniAward) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> }>();
   constructor(
     private url: string,
     private onState: (state: ConnectionState) => void,
     private onPlayer: (player: Player) => void = () => {},
     private onError: (message: string) => void = () => {},
+    private onAwards: (awards: MiniAward[]) => void = () => {},
   ) {
     try {
       const params = new URLSearchParams(location.hash.slice(1));
@@ -151,6 +154,7 @@ export class GameSocket {
     socket.onclose = () => {
       clearTimeout(this.handshake);
       this.sessionReady = false;
+      this.failRequests("Connection lost. Reconnect and retry; the award cannot be paid twice.");
       this.fail(
         "Connection lost. Retry to recover the same spin without another charge.",
       );
@@ -185,6 +189,7 @@ export class GameSocket {
           }
           this.onPlayer(message.player);
           this.onState("connected");
+          if (Array.isArray(message.awards)) this.onAwards(message.awards.filter(validAward));
         } else {
           this.onError(
             message.error?.message || "Unable to open player session.",
@@ -195,6 +200,15 @@ export class GameSocket {
       }
       if (message.type === "player.updated" && validPlayer(message.player)) {
         this.onPlayer(message.player);
+        return;
+      }
+      if (message.type === 'awards.updated' && Array.isArray(message.awards)) { this.onAwards(message.awards.filter(validAward)); return; }
+      const miniRequest = this.requests.get(message.requestId);
+      if (miniRequest) {
+        this.requests.delete(message.requestId); clearTimeout(miniRequest.timer);
+        if (message.type === 'award.result' && validAward(message.award) && validPlayer(message.player)) {
+          this.onPlayer(message.player); miniRequest.resolve(message.award);
+        } else miniRequest.reject(new Error(message.error?.message || 'Invalid award response.'));
         return;
       }
       if (!this.pending || message.requestId !== this.pending.id) return;
@@ -280,7 +294,22 @@ export class GameSocket {
       }
     });
   }
+  private failRequests(message: string) {
+    for (const request of this.requests.values()) { clearTimeout(request.timer); request.reject(new Error(message)); }
+    this.requests.clear();
+  }
+  awardRequest(type: 'award.get' | 'award.play' | 'targets.start' | 'targets.hit' | 'targets.finish', awardId: string, choiceIndex?: number, targetId?: string): Promise<MiniAward> {
+    if (!this.sessionReady || this.socket?.readyState !== WebSocket.OPEN) return Promise.reject(new Error('Waiting for the player connection.'));
+    return new Promise((resolve, reject) => {
+      const requestId = crypto.randomUUID();
+      const timer = setTimeout(() => { this.requests.delete(requestId); reject(new Error('Request timed out. Retry to recover the saved award result.')); }, 8000);
+      this.requests.set(requestId, { resolve, reject, timer });
+      try { this.socket!.send(JSON.stringify({ type, requestId, awardId, ...(targetId ? {targetId} : {}), ...(choiceIndex === undefined ? {} : { choiceIndex }) })); }
+      catch { this.requests.delete(requestId); clearTimeout(timer); reject(new Error('Unable to send the request.')); }
+    });
+  }
   dispose() {
+    this.failRequests('Game closed.');
     this.disposed = true;
     clearTimeout(this.retry);
     clearTimeout(this.handshake);
