@@ -60,3 +60,7 @@ Tests cover continuous rotation while waiting, sequential stops, exact symbols, 
 The generated transparent atlas in `public/assets/symbols.png` contains ten symbols in a 5 × 2 grid. IDs 0–9 map to cherries, lemon, grapes, bell, star, diamond, clover, crown, horseshoe, and planet. The server protocol and win evaluation remain unchanged.
 
 PixiJS renders each atlas frame as a sprite. GSAP gently pulses winning sprites (scale and opacity) and their outlines while other symbols dim. The timeline is killed and visual state reset on the next spin, cancellation, or scene destruction. Reduced-motion preferences use static highlights.
+
+## Layout and history
+
+The screen contains only the reels, spin button, and history. The entire 1000 × 600 composition scales uniformly to fit the viewport, preserving its 5:3 aspect ratio and side-by-side arrangement; unused space surrounds it when the window has another aspect ratio. History scrolls inside its panel and retains the latest 50 completed spins. Winning entries show the matching symbol triplets, grouped by symbol with their winning-way count.
