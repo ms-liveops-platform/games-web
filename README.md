@@ -33,9 +33,9 @@ The default game connection is `ws://<current hostname>:5555/ws/games` (or `wss`
 4. The left reel starts decelerating when the response arrives. The middle and right follow at 280 ms intervals. Each deceleration takes 850 ms and lands precisely on its server-provided column.
 5. All reels must settle before another spin can begin. Winning cells are outlined; the winning-way count and recent session results update.
 
-`matrix[row][reel]` matches the core-api protocol. Decorative moving symbols do not determine the result. The server controls every landed symbol and win. There are no bets, balances, payouts, or real-money transactions.
+`matrix[row][reel]` matches the core-api protocol. Decorative moving symbols do not determine the result. The server controls every landed symbol and win. Each spin costs 1 mock credit. IDs 0–2 pay 1× per winning way, 3–5 pay 3×, and 6–9 pay 10×. The server deducts the bet and credits the total payout atomically. The game displays the persisted player display name and balance. There are no real-money transactions.
 
-A failed request or 8-second timeout cancels animation and restores the last completed board. Connections retry every 2 seconds. Spins are never automatically replayed: the current stateless backend cannot recover or deduplicate them. Session history lives only in the page.
+A failed request or 8-second timeout cancels animation and restores the last completed board. Connections retry every 2 seconds. Session credentials and unresolved spin IDs are stored locally. A manual retry after a timeout reuses the original request ID, and the backend returns the same saved result without another charge. Session history lives only in the page; rounds and balances persist in MongoDB.
 
 ## Structure
 
@@ -63,4 +63,10 @@ PixiJS renders each atlas frame as a sprite. GSAP gently pulses winning sprites 
 
 ## Layout and history
 
-The screen contains only the reels, spin button, and history. The entire 1000 × 600 composition scales uniformly to fit the viewport, preserving its 5:3 aspect ratio and side-by-side arrangement; unused space surrounds it when the window has another aspect ratio. History scrolls inside its panel and retains the latest 50 completed spins. Winning entries show the matching symbol triplets, grouped by symbol with their winning-way count.
+The screen contains the player name/balance, reels, spin button, and history. The entire 1000 × 600 composition scales uniformly to fit the viewport, preserving its 5:3 aspect ratio and side-by-side arrangement; unused space surrounds it when the window has another aspect ratio. History scrolls inside its panel and retains the latest 50 completed spins. Winning entries show the matching symbol triplets, grouped by symbol with their winning-way count.
+
+## Player sessions
+
+core-api requires MongoDB configuration before play. On connection the client sends `session.open`, restoring its stored player ID and token. Without credentials, core-api provisions a demo player with 100 credits. Use the back-office player launch link to play as a specific player. Link credentials are consumed from the fragment and removed from the address bar.
+
+All profile and balance communication remains WebSocket-only. `player.updated` messages reflect mock deposits, credit awards, profile changes, and spins. Back-office requests use HTTP independently. The backend is authoritative for bet, payout, and current balance.
