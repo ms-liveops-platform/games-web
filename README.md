@@ -4,7 +4,7 @@ A responsive 3 × 3 slot frontend built with PixiJS v8, TypeScript, and Vite. Al
 
 ## Run locally
 
-Requires Node.js 20.19+ or 22.12+.
+Requires Node.js 24.x and npm 11.x.
 
 Start core-api in one terminal:
 
@@ -102,3 +102,7 @@ Drag across a scratch zone to remove its coating. The first touch locks the choi
 Grumpy birds move with GSAP (stationary when reduced motion is requested). Click/tap as many birds as possible before the countdown expires. Each shot bird grays out, falls, becomes unclickable, and is replaced immediately. At least three live targets stay visible. Instant rewards add together; multipliers add together and their sum multiplies the base amount once. Reward range is independent of which bird was hit. `min` and `max` define an inclusive uniform integer range; alternatively an explicit `amounts` list provides a discrete prize pool in URL previews. Campaign configuration is authoritative for awarded plays.
 
 Targets accept `duration=5..120` seconds in preview URLs (default 30), or `durationSeconds` in JSON configuration and back-office forms. Press Start to begin. The HUD displays time remaining, hit count, and the accumulated amount/multiplier. The server controls the deadline and each unique target ID. Awarded rounds resume their existing timer after reconnecting; closing the browser does not pause it. A completed round pays the accumulated total exactly once, including zero-hit rounds. Preview rounds use a persistent WebSocket and restarting a disconnected preview creates a new mock round without wallet effects.
+
+## Heroku deployment
+
+See [HEROKU.md](HEROKU.md) for the app setup and required public build-time URLs. `npm start` serves the built `dist` directory with SPA route fallback and Heroku’s assigned port. Development commands and ports are unchanged.

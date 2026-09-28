@@ -1,0 +1,27 @@
+{
+  "name": "games-web",
+  "description": "LiveOps demo games-web",
+  "stack": "heroku-24",
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1
+    }
+  },
+  "env": {
+    "NODE_ENV": {
+      "value": "production"
+    },
+    "HOST": {
+      "value": "0.0.0.0"
+    },
+    "VITE_GAME_WS_URL": {
+      "description": "wss://YOUR-API-HOST/ws/games (public URL embedded at build time).",
+      "required": true
+    }
+  }
+}
