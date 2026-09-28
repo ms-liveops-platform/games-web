@@ -106,3 +106,9 @@ Targets accept `duration=5..120` seconds in preview URLs (default 30), or `durat
 ## Heroku deployment
 
 See [HEROKU.md](HEROKU.md) for the app setup and required public build-time URLs. `npm start` serves the built `dist` directory with SPA route fallback and Heroku’s assigned port. Development commands and ports are unchanged.
+
+## Code quality
+
+Run `npm run lint` to check JavaScript and TypeScript, or `npm run lint:fix` to apply automatic fixes. Run `npm run format` to format the project with Prettier, and `npm run format:check` to check formatting without changing files. Build output, dependencies, coverage, and local environment files are excluded.
+
+TypeScript is pinned to the 6.0 minor series supported by typescript-eslint. Upgrade them together when newer compiler support is available.

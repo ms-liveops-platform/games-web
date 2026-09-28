@@ -50,7 +50,15 @@ let count = 0;
 let pendingAwards: MiniAward[] = [];
 let openingBonus = false;
 function openPendingBonus() {
-  if (openingBonus || busy || !ready || state !== 'connected' || player?.status !== 'active' || !pendingAwards.length) return;
+  if (
+    openingBonus ||
+    busy ||
+    !ready ||
+    state !== "connected" ||
+    player?.status !== "active" ||
+    !pendingAwards.length
+  )
+    return;
   openingBonus = true;
   location.assign(awardPath(pendingAwards[0]));
 }
@@ -97,7 +105,10 @@ const socket = new GameSocket(
     status.textContent = message;
     button.title = message;
   },
-  (awards) => { pendingAwards = awards; openPendingBonus(); },
+  (awards) => {
+    pendingAwards = awards;
+    openPendingBonus();
+  },
 );
 
 function addHistory(result: SpinResult) {
